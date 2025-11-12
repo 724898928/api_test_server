@@ -21,7 +21,7 @@
       "content-type": "application/json"
     },
     "response": {
-      "url": "localhost:8080/firmware/2.0.0.bin",
+      "url": "http://localhost:8080/firmware/2.0.0.bin",
       "version": "2.0.0",
       "md5": "abcd1234567890abcd1234567890abcd",
       "instructions": [
