@@ -20,9 +20,12 @@ async fn hello(req: Request<Incoming>) -> Result<Response<Full<Bytes>>, String> 
     }).ok_or(format!("no route response found"))?;
     let mut respones = Response::new(Full::new(serde_json::to_vec(&res.response).unwrap().into()));
     respones.headers_mut().extend(req.headers().clone());
-    let map = res.headers.clone().unwrap();
-    let headers: HeaderMap = (&map).try_into().expect("valid headers");
-     respones.headers_mut().extend(headers);
+    if let Some(map) = res.headers.clone(){
+        if !map.is_empty(){
+            let headers: HeaderMap = (&map).try_into().expect("valid headers");
+            respones.headers_mut().extend(headers);
+        }
+    }
     Ok(respones.into())
 }
 

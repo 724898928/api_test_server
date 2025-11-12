@@ -6,7 +6,7 @@
       "content-type": "application/json"
     },
     "response": {
-      "key1": "v1",
+      "url": "https://files.provisionusa.com/firmware/2.0.0.bin",
       "version": "2.0.0",
       "md5": "abcd1234567890abcd1234567890abcd",
       "instructions": [
@@ -39,9 +39,9 @@
     "method": "",
     "headers": null,
     "response": {
-      "key1": "v1",
-      "key2": "v2",
-      "key3": "v3"
+      "transferId": "550e8400-e29b-41d4-a716-446655440001",
+      "destinationUrl": "<https://storageaccount.blob.core.windows.net/deviceserial/filename.log?sig=>...",
+      "completionCallbackPutUrl": "<https://api.example.com/api/firmware/uploadauthorize/>"
     }
   }
 ]
