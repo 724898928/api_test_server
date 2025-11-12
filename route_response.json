@@ -1,0 +1,47 @@
+[
+  {
+    "url": "/api/v2/firmware",
+    "method": "get",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "response": {
+      "key1": "v1",
+      "version": "2.0.0",
+      "md5": "abcd1234567890abcd1234567890abcd",
+      "instructions": [
+        {
+          "type": "reboot",
+          "requestId": "550e8400-e29b-41d4-a716-446655440000",
+          "additionalParameters": {
+            "rebootTime": "AfterFirmwareDownload"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "url": "/api/v2/firmware/results",
+    "method": "",
+    "headers": null,
+    "response": {
+      "results": [
+        {
+          "requestId": "550e8400-e29b-41d4-a716-446655440000",
+          "success": true,
+          "error": null
+        }
+      ]
+    }
+  },
+  {
+    "url": "/api/v2/firmware/uploadauthorize",
+    "method": "",
+    "headers": null,
+    "response": {
+      "key1": "v1",
+      "key2": "v2",
+      "key3": "v3"
+    }
+  }
+]
