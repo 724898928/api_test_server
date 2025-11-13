@@ -39,7 +39,7 @@
     2. 启动服务
         shell:
 ``` 
-        ./api_test_server
+        ./api_test_server 8080
 ```
     3. 测试接口
     客户端现在可以访问配置的接口地址，例如：http://localhost:8080/api/user
