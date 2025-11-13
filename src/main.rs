@@ -1,3 +1,4 @@
+use std::env;
 use futures_util::TryFutureExt;
 use http_body_util::Full;
 use hyper::service::service_fn;
@@ -33,7 +34,9 @@ async fn hello(req: Request<Incoming>) -> Result<Response<Full<Bytes>>, String> 
 
 #[tokio::main]
 async fn main() -> Result<(), String> {
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
+    let port:u16 = env::args().nth(1).unwrap_or("8080".to_string()).parse().unwrap();
+    println!("Listening on port {}", port);
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     let listener = TcpListener::bind(addr).map_err(|e| e.to_string()).await?;
     loop {
         let (stream, _) = listener.accept().map_err(|e| e.to_string()).await?;
