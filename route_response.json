@@ -6,15 +6,36 @@
       "content-type": "application/json"
     },
     "response": {
-      "key1": "v1",
+      "url": "https://files.provisionusa.com/firmware/2.0.0.bin",
       "version": "2.0.0",
       "md5": "abcd1234567890abcd1234567890abcd",
       "instructions": [
         {
-          "type": "reboot",
+          "type": "requestLogs",
           "requestId": "550e8400-e29b-41d4-a716-446655440000",
           "additionalParameters": {
-            "rebootTime": "AfterFirmwareDownload"
+            "logLevel": "1"
+          }
+        },
+        {
+          "type": "requestConfig",
+          "requestId": "aaaaaa-e29b-41d4-a716-446655440000",
+          "additionalParameters": null
+        },
+        {
+          "type": "setServer",
+          "requestId": "bbbbb-e29b-41d4-a716-446655440000",
+          "additionalParameters": {
+            "serverUrl": "https://transfer.com",
+            "fileTransfer": "false"
+          }
+        },
+        {
+          "type": "getCommand",
+          "requestId": "cccccc-e29b-41d4-a716-446655440000",
+          "additionalParameters": {
+            "command": "echo 1",
+            "script": null
           }
         }
       ]
@@ -22,26 +43,32 @@
   },
   {
     "url": "/api/v2/firmware/results",
-    "method": "",
+    "method": "post",
+    "headers": null,
+    "response": null
+  },
+  {
+    "url": "/api/v2/firmware/uploadauthorize/*.*",
+    "method": "get",
     "headers": null,
     "response": {
-      "results": [
-        {
-          "requestId": "550e8400-e29b-41d4-a716-446655440000",
-          "success": true,
-          "error": null
-        }
-      ]
+      "transferId": "550e8400-e29b-41d4-a716-446655440001",
+      "destinationUrl": "<https://storageaccount.blob.core.windows.net/deviceserial/filename.log?sig=>...",
+      "completionCallbackPutUrl": "<http://192.168.31.8:8080/api/v2/firmware/uploadauthorize/>"
     }
   },
   {
     "url": "/api/v2/firmware/uploadauthorize",
-    "method": "",
+    "method": "post",
     "headers": null,
-    "response": {
-      "key1": "v1",
-      "key2": "v2",
-      "key3": "v3"
-    }
+    "response": null
+  },
+  {
+    "url": "/api/v2/firmware/download",
+    "method": "post",
+    "headers":  {
+      "content-type": "application/json"
+    },
+    "response": null
   }
 ]
