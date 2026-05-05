@@ -1,0 +1,112 @@
+{
+  "getMountPath": {
+    "value": "/tmp/disk/ssd",
+    "info_type": 1
+  },
+  "getStandByState": {
+    "value": 0,
+    "info_type": 0
+  },
+  "getAccState": {
+    "value": 1,
+    "info_type": 0
+  },
+  "statusNetConn": {
+    "value": 2,
+    "info_type": 0
+  },
+  "getSerialNum": {
+    "value": "26A360D0002",
+    "info_type": 1
+  },
+  "getSimcardNum": {
+    "value": "89860320757557662615",
+    "info_type": 1
+  },
+  "getGpsLocation": {
+    "value": {
+      "cmd": "gpsData",
+      "args": {
+        "latitude": 22.54386666666667,
+        "longitude": 111.0
+      }
+    },
+    "info_type": 1
+  },
+  "getFirmwareVersion": {
+    "value": "01.v3.8.02-0.0-10590:20260317",
+    "info_type": 1
+  },
+  "getTimezone": {
+    "value": "Asia/Shanghai",
+    "info_type": 1
+  },
+  "getCameraInfo": {
+    "value": [
+      {
+        "camera_number": 1,
+        "camera_name": "CAMERA_RIGHT",
+        "thumbnail": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA..."
+      }
+    ],
+    "info_type": 1
+  },
+  "getCameraStatus": {
+    "value": [
+      0,
+      1,
+      1,
+      0,
+      0,
+      0
+    ],
+    "info_type": 1
+  },
+  "getNetworkName": {
+    "value": "ZONE",
+    "info_type": 1
+  },
+  "getVideoDuration": {
+    "value": [
+      300,
+      300,
+      300,
+      300,
+      300,
+      300
+    ],
+    "info_type": 1
+  },
+  "getUnitId": {
+    "value": "PV0001",
+    "info_type": 1
+  },
+  "getCustomerId": {
+    "value": 4001,
+    "info_type": 1
+  },
+  "get4GEnabled": {
+    "value": 1,
+    "info_type": 0
+  },
+  "get4gApn": {
+    "value": "m2m005266.attz",
+    "info_type": 1
+  },
+  "getFileTransfer": {
+    "value": 1,
+    "info_type": 0
+  },
+  "getServerUrl": {
+    "value": "firmware.provisionusa.com",
+    "info_type": 1
+  },
+  "getOsdEnable": {
+    "value": 1,
+    "info_type": 0
+  },
+  "getVideoFormat": {
+    "value": 0,
+    "info_type": 0
+  }
+}

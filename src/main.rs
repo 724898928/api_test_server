@@ -1,17 +1,29 @@
-use futures_util::TryFutureExt;
+use bytes::Bytes;
+use futures_util::{SinkExt, StreamExt, TryFutureExt, TryStreamExt};
 use http_body_util::Full;
 use hyper::service::service_fn;
-use hyper::{body::{ Incoming, Body}, server::conn::http1, HeaderMap, Request, Response, StatusCode};
+use hyper::{
+    body::{Body, Incoming},
+    server::conn::http1,
+    HeaderMap, Request, Response, StatusCode,
+};
 use hyper_util::rt::TokioIo;
 use regex::Regex;
+use serde::Deserializer;
+use serde_json::{json, Value};
+use std::collections::HashMap;
+use std::error::Error;
+use std::future;
+use std::future::Future;
 use std::net::SocketAddr;
 use std::path::Path;
-use bytes::Bytes;
 use tokio::fs::File;
-use tokio::io::AsyncReadExt;
-use tokio::net::TcpListener;
+use tokio::io::{AsyncReadExt, AsyncWrite, AsyncWriteExt};
+use tokio::net::{TcpListener, TcpStream};
 mod mode;
 use mode::*;
+use tokio::join;
+use tokio_tungstenite::tungstenite::Message;
 
 fn regex_url(url: &str, re_url: &str) -> bool {
     let mut re_url = re_url.replace("*", "[^/]+");
@@ -23,14 +35,14 @@ fn regex_url(url: &str, re_url: &str) -> bool {
     res
 }
 
-async fn download_with_resume(path: &str) -> Result<Response<Full<Bytes>>, String> {
+async fn download_with_resume(path: &str) -> Result<Response<Full<Bytes>>> {
     let mut respones = Response::new(Full::new("Invalid path".into()));
     if path.contains("..") || path.contains("~") {
         return Ok(respones);
     }
     // 提取文件名
     let mut filename = path.trim_start_matches("/download/").to_string();
-    filename = format!("example/{}",filename);
+    filename = format!("example/{}", filename);
     let file_path = Path::new(&filename);
     if file_path.exists() {
         let mut file = File::open(file_path).map_err(|err| err.to_string()).await?;
@@ -52,13 +64,16 @@ async fn download_with_resume(path: &str) -> Result<Response<Full<Bytes>>, Strin
         // 创建响应
         let response = Response::builder()
             .header("Content-Type", mime_type)
-            .header("Content-Disposition", format!("attachment; filename=\"{}\"", filename))
+            .header(
+                "Content-Disposition",
+                format!("attachment; filename=\"{}\"", filename),
+            )
             .header("Content-Length", contents.len().to_string())
             .body(Full::from(contents))
             .unwrap();
 
         Ok(response)
-    }else {
+    } else {
         let response = Response::builder()
             .status(StatusCode::NOT_FOUND)
             .body(Full::from("文件不存在"))
@@ -67,17 +82,25 @@ async fn download_with_resume(path: &str) -> Result<Response<Full<Bytes>>, Strin
     }
 }
 
-async fn handle_request(req: Request<Incoming>) -> Result<Response<Full<Bytes>>, String> {
+async fn handle_request(req: Request<Incoming>) -> Result<Response<Full<Bytes>>> {
     match (req.uri().path(), req.method().as_str()) {
-        (p,_) if p.contains("/download") => {return download_with_resume(p).await}
-        (_) => {}
+        (p, _) if p.contains("/download") => return download_with_resume(p).await,
+        _ => {}
     }
     let file = std::fs::File::open(Path::new("route_response.json")).map_err(|e| e.to_string())?;
     let json: Vec<RouteResponse> = serde_json::from_reader(file).map_err(|e| e.to_string())?;
     let scheme = &req.uri().scheme();
     //  println!("req.uri():{:?}", &req.uri(),);
-    println!("req.uri().path():{:?}  scheme: {:?}", &req.uri().path(), scheme);
-    println!("req.uri().query():{:?}  Request.body: {:?}", &req.uri().query(), req.body());
+    println!(
+        "req.uri().path():{:?}  scheme: {:?}",
+        &req.uri().path(),
+        scheme
+    );
+    println!(
+        "req.uri().query():{:?}  Request.body: {:?}",
+        &req.uri().query(),
+        req.body()
+    );
     let res = json
         .iter()
         .find(|e| {
@@ -97,25 +120,138 @@ async fn handle_request(req: Request<Incoming>) -> Result<Response<Full<Bytes>>,
     Ok(respones.into())
 }
 
-#[tokio::main]
-async fn main() -> Result<(), String> {
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8082));
-    let listener = TcpListener::bind(addr).map_err(|e| e.to_string()).await?;
-    loop {
-        let (stream, _) = listener.accept().map_err(|e| e.to_string()).await?;
-        let io = TokioIo::new(stream);
-        tokio::spawn(async move {
-            if let Err(err) = http1::Builder::new()
-                .serve_connection(io, service_fn(handle_request))
-                .await
-            {
-                println!("Error serving connection: {:?}", err);
-            }
-        });
-    }
+pub type Result<T> = std::result::Result<T, String>;
+
+#[tokio::main()]
+async fn main() -> Result<()> {
+    join!(make_http_server(), make_socket_server());
     // let url = "/api/v2/firmware/uploadauthorize/log.txt?serial=2205H9HD9990&requestId=550e8400-e29b-41d4-a716-446655440000";
     // let res = regex_url(url, "/api/v2/firmware/uploadauthorize/*.txt");
     // println!("res.url():{:?}", &res);
 
     Ok(())
+}
+
+pub async fn create_tcp_server<F, Fut>(addr: &str, f: F) -> Result<()>
+where
+    F: Fn(TokioIo<TcpStream>) -> Fut + Send + Sync + 'static + Clone,
+    Fut: Future<Output = Result<()>> + Send + 'static,
+{
+    let listener = TcpListener::bind(addr).await.map_err(|e| e.to_string())?;
+    println!("🚀 异步服务器已启动，监听地址: {}", addr);
+    loop {
+        let (stream, _addr) = listener.accept().await.map_err(|e| e.to_string())?;
+        let io = TokioIo::new(stream);
+        let f_clone = f.clone();
+        tokio::spawn(async move {
+            f_clone(io).await;
+        });
+    }
+}
+async fn make_http_server() -> Result<()> {
+    let addr = "0.0.0.0:8082";
+    create_tcp_server(addr, |mut io| async move {
+        if let Err(err) = http1::Builder::new()
+            .serve_connection(io, service_fn(handle_request))
+            .await
+        {
+            println!("Error serving connection: {:?}", err);
+        }
+        Ok(())
+    })
+    .await
+}
+
+async fn make_socket_server() -> Result<()> {
+    let addr = "0.0.0.0:8080";
+    create_tcp_server(addr, move |mut io| async move {
+        let addr = io
+            .inner()
+            .peer_addr()
+            .expect("connected streams should have a peer address");
+        println!("Peer address: {}", addr);
+
+        let mut ws_stream = tokio_tungstenite::accept_async(io.into_inner())
+            .await
+            .expect("Error during the websocket handshake occurred");
+
+        //  println!("New WebSocket connection: {}", addr);
+
+        while let Some(msg) = ws_stream.next().await {
+            let msg = msg.map_err(|e| e.to_string())?;
+            if msg.is_text() || msg.is_binary() {
+                let command = String::from_utf8_lossy(msg.into_data().as_ref()).to_string();
+                println!("📨 收到指令 [{}]: {}", addr, &command);
+                let response = parse_json2str(&command).await?;
+                println!("response: {}", response.to_string());
+                ws_stream
+                    .send(response)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                // if response.is_string() {
+                //     ws_stream.send(Message::from(json_to_bytes(&response)?)).await.map_err(|e| e.to_string())?;
+                // }else if response.is_object() || response.is_number() {
+                //     ws_stream.send(Message::binary(json_to_bytes(&response)?)).await.map_err(|e| e.to_string())?;
+                // }
+            }
+        }
+        Ok(())
+    })
+    .await?;
+    Ok(())
+}
+
+
+async fn parse_json2str(command: &str) -> Result<Message> {
+    let file = std::fs::File::open(Path::new("socket_response.json")).map_err(|e| e.to_string())?;
+    let json: HashMap<String, HashMap<String, Value>> =
+        serde_json::from_reader(file).map_err(|e| e.to_string())?;
+    if let Some(val) = json.get(command) {
+        // ✅ 正确序列化 JSON → Vec<u8>
+        if val.get("info_type").and_then(|v| v.as_str()) == Some("0") {
+            return Ok(Message::binary(json_to_bytes(
+                val.get("value").unwrap_or(&json!(null)),
+            )?));
+        } else {
+            return Ok(Message::text(
+                val.get("value")
+                    .unwrap_or(&json!(null))
+                    .to_string()
+                    .trim_matches('"')
+                    .to_string(),
+            ));
+        }
+    }
+    return Ok(Message::text(json!(null).to_string()));
+}
+
+
+async fn parse_socket_val(command: &str) -> Result<Value> {
+    let file = std::fs::File::open(Path::new("socket_response.json")).map_err(|e| e.to_string())?;
+    let json: HashMap<String, HashMap<String, Value>> =
+        serde_json::from_reader(file).map_err(|e| e.to_string())?;
+    let val = json
+        .get(command)
+        .unwrap_or(&HashMap::new())
+        .get("value")
+        .cloned()
+        .unwrap_or(json!(null));
+    Ok(val)
+}
+
+async fn parse_socket_json(command: &str) -> Result<Bytes> {
+    let file = std::fs::File::open(Path::new("socket_response.json")).map_err(|e| e.to_string())?;
+    let json: HashMap<String, HashMap<String, Value>> =
+        serde_json::from_reader(file).map_err(|e| e.to_string())?;
+    let val = json
+        .get(command)
+        .unwrap_or(&HashMap::new())
+        .get("value")
+        .cloned()
+        .unwrap_or(json!(null));
+    json_to_bytes(&val)
+}
+fn json_to_bytes(val: &Value) -> Result<Bytes> {
+    let vec = serde_json::to_vec(val).map_err(|e| e.to_string())?;
+    Ok(Bytes::from(vec))
 }
