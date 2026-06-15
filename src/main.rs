@@ -23,7 +23,7 @@ use tokio::net::{TcpListener, TcpStream};
 mod mode;
 use mode::*;
 use tokio::join;
-use tokio_tungstenite::tungstenite::Message;
+use tokio_tungstenite::tungstenite::{Message, Utf8Bytes};
 
 fn regex_url(url: &str, re_url: &str) -> bool {
     let mut re_url = re_url.replace("*", "[^/]+");
@@ -219,12 +219,8 @@ async fn parse_json2str(command: &str) -> Result<Message> {
             println!("rest = {:x?}", rest);
             return Ok(Message::Binary(Bytes::from(rest.to_vec())));
         } else {
-            return Ok(Message::text(
-                val.get("value")
-                    .unwrap_or(&json!(null))
-                    .to_string()
-                    .trim_matches('"')
-                    .to_string(),
+            return Ok(Message::Text(
+                Utf8Bytes::from(val.get("value").unwrap().as_str().unwrap()),
             ));
         }
     }
