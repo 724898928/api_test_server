@@ -220,7 +220,7 @@ async fn parse_json2str(command: &str) -> Result<Message> {
             return Ok(Message::Binary(Bytes::from(rest.to_vec())));
         } else {
             return Ok(Message::Text(
-                Utf8Bytes::from(val.get("value").unwrap().as_str().unwrap()),
+                Utf8Bytes::from(val.get("value").unwrap().as_str().unwrap_or("")),
             ));
         }
     }
