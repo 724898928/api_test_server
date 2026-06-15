@@ -1,6 +1,6 @@
 {
   "getMountPath": {
-    "value": "/tmp/disk/ssd",
+    "value": "/tmp/disk/sd1 \n /tmp/disk/ssd",
     "info_type": 1
   },
   "getStandByState": {

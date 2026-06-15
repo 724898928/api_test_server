@@ -208,10 +208,16 @@ async fn parse_json2str(command: &str) -> Result<Message> {
         serde_json::from_reader(file).map_err(|e| e.to_string())?;
     if let Some(val) = json.get(command) {
         // ✅ 正确序列化 JSON → Vec<u8>
-        if val.get("info_type").and_then(|v| v.as_str()) == Some("0") {
-            return Ok(Message::binary(json_to_bytes(
-                val.get("value").unwrap_or(&json!(null)),
-            )?));
+        if val.get("info_type").map(|v| v.eq(&0_i8)).unwrap() {
+            println!("info_type = {}", val.get("info_type").unwrap().to_string());
+            let rest = match val.get("value") {
+                Some(val) if val.eq(&1) => [0x01],
+                Some(val) if val.eq(&2) => [0x02],
+                Some(val) if val.eq(&3) => [0x03],
+                _ => [0x00]
+            };
+            println!("rest = {:x?}", rest);
+            return Ok(Message::Binary(Bytes::from(rest.to_vec())));
         } else {
             return Ok(Message::text(
                 val.get("value")
@@ -222,7 +228,7 @@ async fn parse_json2str(command: &str) -> Result<Message> {
             ));
         }
     }
-    return Ok(Message::text(json!(null).to_string()));
+    Ok(Message::text(json!(null).to_string()))
 }
 
 
@@ -241,8 +247,7 @@ async fn parse_socket_val(command: &str) -> Result<Value> {
 
 async fn parse_socket_json(command: &str) -> Result<Bytes> {
     let file = std::fs::File::open(Path::new("socket_response.json")).map_err(|e| e.to_string())?;
-    let json: HashMap<String, HashMap<String, Value>> =
-        serde_json::from_reader(file).map_err(|e| e.to_string())?;
+    let json: HashMap<String, HashMap<String, Value>> = serde_json::from_reader(file).map_err(|e| e.to_string())?;
     let val = json
         .get(command)
         .unwrap_or(&HashMap::new())
@@ -251,6 +256,8 @@ async fn parse_socket_json(command: &str) -> Result<Bytes> {
         .unwrap_or(json!(null));
     json_to_bytes(&val)
 }
+
+
 fn json_to_bytes(val: &Value) -> Result<Bytes> {
     let vec = serde_json::to_vec(val).map_err(|e| e.to_string())?;
     Ok(Bytes::from(vec))
