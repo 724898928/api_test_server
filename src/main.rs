@@ -10,7 +10,7 @@ use hyper::{
 use hyper_util::rt::TokioIo;
 use regex::Regex;
 use serde::Deserializer;
-use serde_json::{json, Value};
+use serde_json::{json, to_vec, Value};
 use std::collections::HashMap;
 use std::error::Error;
 use std::future;
@@ -218,6 +218,10 @@ async fn parse_json2str(command: &str) -> Result<Message> {
             };
             println!("rest = {:x?}", rest);
             return Ok(Message::Binary(Bytes::from(rest.to_vec())));
+        } else if val.get("info_type").map(|v| v.eq(&2_i8)).unwrap(){
+            let rest = val.get("value").unwrap();
+            println!("rest = {:x?}", rest);
+            return Ok(Message::Binary(json_to_bytes(rest)?));
         } else {
             return Ok(Message::Text(
                 Utf8Bytes::from(val.get("value").unwrap().as_str().unwrap_or("")),

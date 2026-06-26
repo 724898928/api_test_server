@@ -31,7 +31,7 @@
         "longitude": 111.0
       }
     },
-    "info_type": 1
+    "info_type": 2
   },
   "getFirmwareVersion": {
     "value": "01.v3.8.02-0.0-10590:20260317",
@@ -49,17 +49,10 @@
         "thumbnail": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA..."
       }
     ],
-    "info_type": 1
+    "info_type": 2
   },
   "getCameraStatus": {
-    "value": [
-      0,
-      1,
-      1,
-      0,
-      0,
-      0
-    ],
+    "value":"0;1;1;0;0;0",
     "info_type": 1
   },
   "getNetworkName": {
@@ -67,14 +60,7 @@
     "info_type": 1
   },
   "getVideoDuration": {
-    "value": [
-      300,
-      300,
-      300,
-      300,
-      300,
-      300
-    ],
+    "value": "600;600;600;600;600;600;",
     "info_type": 1
   },
   "getUnitId": {
